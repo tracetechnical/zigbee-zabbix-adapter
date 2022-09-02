@@ -5,6 +5,7 @@ on:
     branches:
       - master
 env:
+  REGISTRY: ghcr.io
   IMAGE_NAME: image
 
 jobs:
@@ -50,14 +51,20 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Create .env file
         run: touch .env
-      - name: Build and push Docker image
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: type=raw,value=${{ env.VERSION }}
+      - name: Build and push staging Docker image
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
-          tags: ${{ env.VERSION }}
+          tags: ${{ steps.meta.outputs.tags }}
       - name: Move cache
         run: |
           rm -rf /tmp/.buildx-cache
